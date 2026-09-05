@@ -18,8 +18,9 @@ procedure Tests is
 
    --  Helper for readable tests using standard NIST vectors
    type Nibble is mod 16;
+   
    function Hex_To_Block (Hex : String) return Block_Type is
-      B : Block_Type := (others => False);
+      B : Block_Type := [others => False];
       Val : Nibble;
       C : Character;
       Idx : Natural := 1;
@@ -45,13 +46,40 @@ procedure Tests is
       return B;
    end Hex_To_Block;
 
+   function Hex_To_Key (Hex : String) return Key_Type is
+      K : Key_Type := [others => False];
+      Val : Nibble;
+      C : Character;
+      Idx : Natural := 1;
+   begin
+      pragma Assert (Hex'Length = 16, "Hex string must represent 64 bits (16 hex chars)");
+      for I in Hex'Range loop
+         C := Hex(I);
+         if C in '0' .. '9' then
+            Val := Nibble(Character'Pos(C) - Character'Pos('0'));
+         elsif C in 'A' .. 'F' then
+            Val := Nibble(Character'Pos(C) - Character'Pos('A') + 10);
+         elsif C in 'a' .. 'f' then
+            Val := Nibble(Character'Pos(C) - Character'Pos('a') + 10);
+         else
+            Val := 0;
+         end if;
+         K(Idx + 0) := (Val and 8) /= 0;
+         K(Idx + 1) := (Val and 4) /= 0;
+         K(Idx + 2) := (Val and 2) /= 0;
+         K(Idx + 3) := (Val and 1) /= 0;
+         Idx := Idx + 4;
+      end loop;
+      return K;
+   end Hex_To_Key;
+
    --  Test constants
-   Zero_Key : constant Key_Type := Hex_To_Block("0000000000000000");
+   Zero_Key : constant Key_Type := Hex_To_Key("0000000000000000");
    Zero_Pt  : constant Block_Type := Hex_To_Block("0000000000000000");
-   Weak1    : constant Key_Type := Hex_To_Block("0101010101010101");
-   Weak2    : constant Key_Type := Hex_To_Block("FEFEFEFEFEFEFEFE");
-   Weak3    : constant Key_Type := Hex_To_Block("E0E0E0E0F1F1F1F1");
-   Weak4    : constant Key_Type := Hex_To_Block("1F1F1F1F0E0E0E0E");
+   Weak1    : constant Key_Type := Hex_To_Key("0101010101010101");
+   Weak2    : constant Key_Type := Hex_To_Key("FEFEFEFEFEFEFEFE");
+   Weak3    : constant Key_Type := Hex_To_Key("E0E0E0E0F1F1F1F1");
+   Weak4    : constant Key_Type := Hex_To_Key("1F1F1F1F0E0E0E0E");
 
 begin
    Put_Line ("TEST 1 — Basic Symmetry (Zero Key, Zero Pt)");
@@ -66,7 +94,7 @@ begin
    Put_Line ("TEST 2 — Known NIST Vector Check");
    declare
       -- Standard NIST Vector
-      Key : constant Key_Type := Hex_To_Block("133457799BBCDFF1");
+      Key : constant Key_Type := Hex_To_Key("133457799BBCDFF1");
       Pt  : constant Block_Type := Hex_To_Block("0123456789ABCDEF");
       Ct  : constant Block_Type := Hex_To_Block("85E813540F0AB405");
    begin
@@ -106,8 +134,8 @@ begin
 
    Put_Line ("TEST 7 — Semi-Weak Key Pair Properties");
    declare
-      SK1 : constant Key_Type := Hex_To_Block("01FE01FE01FE01FE");
-      SK2 : constant Key_Type := Hex_To_Block("FE01FE01FE01FE01");
+      SK1 : constant Key_Type := Hex_To_Key("01FE01FE01FE01FE");
+      SK2 : constant Key_Type := Hex_To_Key("FE01FE01FE01FE01");
    begin
       Check ("7.1 Key is not strictly weak (semi-weak)", not Is_Weak_Key(SK1));
       Check ("7.2 E(Pt, K1) = D(Pt, K2)", Encrypt(Zero_Pt, SK1) = Decrypt(Zero_Pt, SK2));
@@ -116,8 +144,8 @@ begin
 
    Put_Line ("TEST 8 — Triple DES Degeneration (K1 = K2 = K3)");
    declare
-      K    : constant Key_Type := Hex_To_Block("133457799BBCDFF1");
-      Keys : constant Key_3_Type := (K, K, K);
+      K    : constant Key_Type := Hex_To_Key("133457799BBCDFF1");
+      Keys : constant Key_3_Type := [K, K, K];
       Pt   : constant Block_Type := Hex_To_Block("0123456789ABCDEF");
       Ct   : constant Block_Type := Encrypt(Pt, K);
    begin
@@ -128,9 +156,9 @@ begin
 
    Put_Line ("TEST 9 — Triple DES 2-Key Mode (K1 = K3)");
    declare
-      K1   : constant Key_Type := Hex_To_Block("133457799BBCDFF1");
-      K2   : constant Key_Type := Hex_To_Block("FE01FE01FE01FE01");
-      Keys : constant Key_3_Type := (K1, K2, K1);
+      K1   : constant Key_Type := Hex_To_Key("133457799BBCDFF1");
+      K2   : constant Key_Type := Hex_To_Key("FE01FE01FE01FE01");
+      Keys : constant Key_3_Type := [K1, K2, K1];
       Pt   : constant Block_Type := Hex_To_Block("0123456789ABCDEF");
    begin
       Check ("9.1 3DES symmetry holds", Triple_DES_Decrypt(Triple_DES_Encrypt(Pt, Keys), Keys) = Pt);
@@ -140,9 +168,9 @@ begin
 
    Put_Line ("TEST 10 — Triple DES 3-Key Mode (All Unique)");
    declare
-      Keys : constant Key_3_Type := (Hex_To_Block("133457799BBCDFF1"),
-                                     Hex_To_Block("FE01FE01FE01FE01"),
-                                     Hex_To_Block("0101010101010101"));
+      Keys : constant Key_3_Type := [Hex_To_Key("133457799BBCDFF1"),
+                                     Hex_To_Key("FE01FE01FE01FE01"),
+                                     Hex_To_Key("0101010101010101")];
       Pt   : constant Block_Type := Hex_To_Block("0123456789ABCDEF");
       Ct   : constant Block_Type := Triple_DES_Encrypt(Pt, Keys);
    begin
@@ -162,7 +190,7 @@ begin
 
    Put_Line ("TEST 12 — Avalanche Effect (1-bit Plaintext Change)");
    declare
-      K    : constant Key_Type := Hex_To_Block("133457799BBCDFF1");
+      K    : constant Key_Type := Hex_To_Key("133457799BBCDFF1");
       Pt1  : constant Block_Type := Zero_Pt;
       Pt2  : Block_Type := Zero_Pt;
    begin
