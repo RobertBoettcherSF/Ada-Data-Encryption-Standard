@@ -88,7 +88,7 @@ begin
    begin
       Check ("1.1 Encrypt transforms plain text", Ct /= Zero_Pt);
       Check ("1.2 Decrypt recovers plain text", Decrypt(Ct, Zero_Key) = Zero_Pt);
-      Check ("1.3 Double encrypt differs", Encrypt(Ct, Zero_Key) /= Zero_Pt);
+      Check ("1.3 Double encrypt equals plain (Zero Key is weak)", Encrypt(Ct, Zero_Key) = Zero_Pt);
    end;
 
    Put_Line ("TEST 2 — Known NIST Vector Check");
@@ -223,11 +223,9 @@ begin
 
    Put_Line ("TEST 14 — Parity Error Exception Test");
    begin
-      declare
-         Valid : Boolean := Assert_Valid_Parity(Zero_Key); -- All zeros have EVEN parity
-      begin
+      if Assert_Valid_Parity(Zero_Key) then -- All zeros have EVEN parity
          Check ("14.1 Exception not raised when expected", False);
-      end;
+      end if;
    exception
       when Parity_Error =>
          Check ("14.1 Exception raised correctly on bad parity", True);
