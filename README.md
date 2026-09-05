@@ -1,58 +1,50 @@
-# International Data Encryption Algorithm (IDEA) in Ada 2023
+# Data Encryption Standard (DES) &amp; Triple DES in Ada 2023
 
 ---
 
 ## Project Overview
 
-This repository contains a full, standalone, and strictly-typed implementation of the **International Data Encryption Algorithm (IDEA)** block cipher in Ada 2023 (ISO/IEC 8652:2023). It executes all core algorithm variants, including encryption operations, decryption operations, dynamic subkey schedule generation (52 keys generated from the 128-bit master key), and both full-round and half-round variants.
+This repository provides a fully functioning, highly strict, and robust Ada 2023 implementation of the **Data Encryption Standard (DES)** algorithm, alongside its successor, **Triple DES (3DES)**. Implementing natively over securely bound arrays of `Boolean` guarantees type safety, boundary checking without runtime overhead, and zero side-effects across all memory segments. Operations such as the Initial Permutation (IP), the Feistel rounds, and Key Scheduling are completely statically dimensioned.
 
 ---
 
 ## Features
 
-- **Full Algorithmic Coverage:** Encrypt, decrypt, subkey expansion, and inverse subkey derivation algorithms correctly implemented.
-- **Strict Typing &amp; Strong Contracts:** Employs mathematically-bounded modulo typing (`Word16`, `Word32`) preventing silent overflows. `Pre`, `Post`, and `Global` aspects apply strict execution invariants.
-- **Complex Mathematics Resolved:** Includes exact programmatic mappings for multiplication modulo *216 + 1*, additive inverses modulo *216*, and Extended Euclidean computation for multiplicative inverses.
-- **Zero Warning Footprint:** Assured zero warnings when compiling under strict flag rules (`-gnatwa`).
-- **Standalone Verification:** Ships with a monolithic test application bypassing the need for an interactive executable, utilizing native Ada assertions.
+- **Strong Typing:** Employs discrete constrained indices and native logical capabilities (`XOR`, etc.) over `Packed` `Boolean` arrays natively without runtime casting.
+- **Single DES (Encryption/Decryption):** Fully compliant standard round processing and key scheduling mappings.
+- **Triple DES (3DES):** Encrypt-Decrypt-Encrypt structural workflow compliant with 1-Key, 2-Key, and 3-Key operation parameters.
+- **Key Validation:** Functions to expose algorithmically Weak Keys and parity check/correction systems.
+- **Zero Warnings:** Compiles completely clean under strict GNAT compilation (`-gnatwa -gnat2022`).
 
 ---
 
-## Usage
+## Building &amp; Usage
 
-No external dependencies are required other than an Ada 2022+ compiler (like GNAT). Execution operates through the provided Makefile.
+**Prerequisites:** A modern GNAT toolchain (FSF GCC or GNAT Pro) supporting the Ada 2022/2023 standard flag.
 
-To build and run the test suite (acting as the usage demonstration program):
+1. Build the program and test executable:
+  ```bash
+   make all
+  ```
+2. Run the executable tests:
+  ```bash
+   make test
+  ```
 
-```bash
-make test
-```
-
-**Expected Output:**
+You will see the output detailing each step, concluding with:
 
 ```plaintext
-Running tests...
-===================================================
- IDEA Algorithm Test Suite and Usage Demonstrations 
-===================================================
-...
-  PASS — 13.1 Too short string throws format exception
-  PASS — 13.2 Too long string throws format exception
-  PASS — 13.3 Invalid hex characters throw format exception
-
-===  39 passed,  0 failed ===
+===  42 passed,  0 failed ===
 ```
 
 ---
 
 ## Testing
 
-The `tests.adb` acts as the definitive usage entrypoint, establishing execution validation against 13 specific test matrices (39 total checks). Testing validates functional correctness, encryption/decryption state isolation round-trips (using varying high-entropy data topologies), programmatic mathematical limit-bounding, and deliberate exception testing for input formatting (e.g., invalid string conversion checks). This ensures absolute robustness required for verifiable software constructs.
+The suite strictly utilizes runtime constraints via an encapsulated testing structure to guarantee zero functional omissions. Test categories encompass:
 
----
-
-## Building
-
-**Prerequisites:** GNAT Toolchain configured for Ada 2022/2023 (`-gnat2022`).
-
-Just type `make` or `make test` at the root directory. To clean compilation artifacts, use `make clean`.
+- **Functional Correctness &amp; NIST Vectors:** Evaluates against statically verifiable historical vector values to confirm baseline mathematics.
+- **Symmetry Check Constraints:** Verifies exact cyclical reversion (`Decrypt(Encrypt(P)) == P`).
+- **Degradation Protocols:** Ensures exact algorithm performance in cases like Weak Keys (where E == D) and 3DES equivalence when K1=K2=K3.
+- **Avalanche Assurance:** Validates systemic diffusion where one bit mutation causes macroscopic systemic deviation.
+- **Exception Handlers:** Uses boundary enforcement algorithms directly testing internal exception signals (`Parity_Error`).
